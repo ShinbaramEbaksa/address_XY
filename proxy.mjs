@@ -1,7 +1,10 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import cors from 'cors';
+import { parseStringPromise } from 'xml2js';
 
+
+// 서버켜기 node Proxy.mjs 서버끄기 ctrl C
 const app = express();
 app.use(cors());
 
@@ -18,11 +21,18 @@ app.use((req, res, next) => {
 app.get('/address', async (req, res) => {
     try {
         const address = req.query.address;
-        const response = await fetch(`${API_URL}&address=${encodeURIComponent(address)}&refine=true&simple=false&format=xml&type=road&key=${API_KEY}`);
+        const response = await fetch(`${API_URL}&address=${encodeURIComponent(address)}&refine=true&simple=false&format=xml&type=road&key=${API_KEY}`); // type(road:도로명주소/PARCEL:지번주소)
         const data = await response.text(); // XML 형식이므로 .text() 사용
-        res.header('Content-Type', 'application/xml');
-        res.send(data);
+
+        // XML 파싱
+        const parsedData = await parseStringPromise(data);
+        const x = parseFloat(parsedData.response.result[0].point[0].x[0]);
+        const y = parseFloat(parsedData.response.result[0].point[0].y[0]);
+
+        // 클라이언트에게 y와 x 값을 전달 (간결하게 출력)
+        res.send(`${y}, ${x}`);
     } catch (error) {
+        console.error(error);
         res.status(500).send('Internal Server Error');
     }
 });

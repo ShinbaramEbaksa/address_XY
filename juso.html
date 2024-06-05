@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address to Point</title>
+</head>
+<body>
+    <h1>Address to Point</h1>
+    <p>주소를 입력하면 해당 요청에서 "address"에 들어가는 결과를 표시합니다.</p>
+    <form id="addressForm">
+        <input type="text" id="addressInput" placeholder="주소를 입력하세요" style="width: 300px;">
+        <button type="button" onclick="getPoint()">결과 보기</button>
+    </form>
+    <div id="result"></div>
+    <script>
+        async function getPoint() {
+            const address = document.getElementById('addressInput').value;
+            const response = await fetch(`https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(address)}&refine=true&simple=false&format=json&type=parcel&key=2B6A5BEA-B847-356B-9028-ED6FB3650657`);
+            const data = await response.json();
+            const point = data.response.result.point;
+            document.getElementById('result').textContent = `Address: ${address}, Point: ${point.x}, ${point.y}`;
+        }
+    </script>
+</body>
+</html>

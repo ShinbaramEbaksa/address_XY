@@ -1,0 +1,1 @@
+https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EC%A4%91%EA%B5%AC%20%ED%83%9C%ED%8F%89%EB%A1%9C1%EA%B0%80%2031&refine=true&simple=false&format=json&type=parcel&key=2B6A5BEA-B847-356B-9028-ED6FB3650657

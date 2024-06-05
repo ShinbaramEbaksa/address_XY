@@ -29,11 +29,7 @@
                     throw new Error('네트워크 응답에 문제가 있습니다.');
                 }
                 const data = await response.json();
-                if (data.response.status !== "OK" || !data.response.result || !data.response.result.point) {
-                    throw new Error('유효한 결과를 받지 못했습니다.');
-                }
-                const point = data.response.result.point;
-                document.getElementById('result').textContent = `Address: ${address}, Point: ${point.x}, ${point.y}`;
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
             } catch (error) {
                 document.getElementById('result').textContent = `오류: ${error.message}`;
             }

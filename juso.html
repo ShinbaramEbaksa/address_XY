@@ -15,21 +15,29 @@
     <div id="result"></div>
     <script>
         async function getPoint() {
-            const address = document.getElementById('addressInput').value;
+            let address = document.getElementById('addressInput').value;
             if (!address) {
                 document.getElementById('result').textContent = '주소를 입력하세요.';
                 return;
             }
 
+            // Replace spaces with '%'
+            address = address.replace(/ /g, '%');
+
+            // Add '20' before every digit
+            address = address.replace(/(\d)/g, '20$1');
+
             document.getElementById('result').textContent = '로딩 중...';
 
             try {
-                const response = await fetch(`http://localhost:3000/address?address=${encodeURIComponent(address)}`);
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const apiUrl = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(address)}&refine=true&simple=false&format=xml&type=road&key=6AF229F1-482F-3323-942F-37D854F22E2A`;
+                const response = await fetch(proxyUrl + apiUrl);
                 if (!response.ok) {
                     throw new Error('네트워크 응답에 문제가 있습니다.');
                 }
-                const data = await response.json();
-                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                const data = await response.text(); // XML 형식이므로 .text() 사용
+                document.getElementById('result').textContent = data; // XML 데이터 출력
             } catch (error) {
                 document.getElementById('result').textContent = `오류: ${error.message}`;
             }

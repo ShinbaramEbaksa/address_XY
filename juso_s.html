@@ -9,50 +9,52 @@
 <body>
     <h1>Multiple Address to Coordinates</h1>
     <p>CSV 파일을 업로드하세요. 각 주소는 새 줄로 구분되어야 합니다.</p>
-    <input type="file" id="fileInput" accept=".csv" />
+    <input type="file" id="csvFileInput" accept=".csv" />
     <button onclick="handleFile()">변환하기</button>
+    <button id="downloadButton" onclick="downloadCSV()" style="display:none;">CSV 다운로드</button>
     <div id="result"></div>
 
     <script>
-        function handleFile() {
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
+        let resultsArray = [];
 
-            if (file) {
-                Papa.parse(file, {
-                    complete: function(results) {
-                        const addresses = results.data.flat();
-                        convertAddresses(addresses);
-                    },
-                    error: function(error) {
-                        console.error("CSV 파싱 오류:", error);
-                    }
-                });
-            } else {
-                alert("파일을 선택해주세요.");
-            }
-        }
+        async function handleFile() {
+            const input = document.getElementById('csvFileInput');
+            const file = input.files[0];
 
-        async function convertAddresses(addresses) {
-            const results = [];
-
-            for (const address of addresses) {
-                try {
-                    const response = await fetch(`/coordinates?address=${encodeURIComponent(address)}`);
-                    const data = await response.text();
-                    const [y, x] = data.split(', ');
-                    if (y && x) {
-                        results.push({ address: address, x, y });
-                    } else {
-                        results.push({ address: address, error: "주소를 변환할 수 없음" });
-                    }
-                } catch (error) {
-                    console.error(error);
-                    results.push({ address: address, error: "네트워크 오류" });
-                }
+            if (!file) {
+                alert("CSV 파일을 선택해주세요.");
+                return;
             }
 
-            displayResults(results);
+            Papa.parse(file, {
+                complete: async function(results) {
+                    const addresses = results.data.flat().filter(address => address.trim() !== '');
+
+                    resultsArray = []; // 초기화
+
+                    for (const address of addresses) {
+                        try {
+                            const response = await fetch(`http://localhost:3000/coordinates?address=${encodeURIComponent(address)}`);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            const data = await response.json();
+                            if (data.x && data.y) {
+                                resultsArray.push({ address: address, x: data.x, y: data.y });
+                            } else {
+                                resultsArray.push({ address: address, error: "주소를 변환할 수 없음" });
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            resultsArray.push({ address: address, error: "네트워크 오류" });
+                        }
+                    }
+
+                    displayResults(resultsArray);
+                    document.getElementById('downloadButton').style.display = 'block';
+                },
+                header: false
+            });
         }
 
         function displayResults(results) {
@@ -76,6 +78,27 @@
 
                 resultDiv.appendChild(div);
             }
+        }
+
+        function downloadCSV() {
+            const csvData = resultsArray.map(result => {
+                if (result.error) {
+                    return [result.address, result.error];
+                } else {
+                    return [result.address, result.y, result.x];
+                }
+            });
+
+            const csvContent = "\uFEFF주소,위도,경도\n" + csvData.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "addresses_coordinates.csv");
+            document.body.appendChild(link);
+
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>

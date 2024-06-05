@@ -30,9 +30,7 @@
             document.getElementById('result').textContent = '로딩 중...';
 
             try {
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const apiUrl = `https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(address)}&refine=true&simple=false&format=xml&type=road&key=6AF229F1-482F-3323-942F-37D854F22E2A`;
-                const response = await fetch(proxyUrl + apiUrl);
+                const response = await fetch(`http://localhost:3000/address?address=${encodeURIComponent(address)}`);
                 if (!response.ok) {
                     throw new Error('네트워크 응답에 문제가 있습니다.');
                 }

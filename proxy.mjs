@@ -1,7 +1,9 @@
 import express from 'express';
 import fetch from 'node-fetch';
+import cors from 'cors';
 
 const app = express();
+app.use(cors());
 
 const API_KEY = '6AF229F1-482F-3323-942F-37D854F22E2A';
 const API_URL = 'https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326';

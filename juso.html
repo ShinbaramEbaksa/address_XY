@@ -3,38 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Address to Point</title>
+    <title>Multiple Address to Coordinates</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
 <body>
-    <h1>Address to Coordinates</h1>
-    <p>도로명주소 XY 변환</p>
-    <form id="addressForm" onsubmit="event.preventDefault(); getPoint();">
-        <input type="text" id="addressInput" placeholder="도로명주소를 입력하세요" style="width: 300px;">
-        <button type="submit">결과 보기</button>
-    </form>
+    <h1>Multiple Address to Coordinates</h1>
+    <p>CSV 파일을 업로드하세요. 각 주소는 새 줄로 구분되어야 합니다.</p>
+    <input type="file" id="csvFileInput" accept=".csv" />
+    <button onclick="handleFile()">변환하기</button>
+    <button id="downloadButton" onclick="downloadCSV()" style="display:none;">CSV 다운로드</button>
     <div id="result"></div>
+
     <script>
-        async function getPoint() {
-            let address = document.getElementById('addressInput').value;
-            if (!address) {
-                document.getElementById('result').textContent = '도로명주소를 입력하세요.';
+        let resultsArray = [];
+
+        async function handleFile() {
+            const input = document.getElementById('csvFileInput');
+            const file = input.files[0];
+
+            if (!file) {
+                alert("CSV 파일을 선택해주세요.");
                 return;
             }
 
+            Papa.parse(file, {
+                complete: async function(results) {
+                    const addresses = results.data.flat().filter(address => address.trim() !== '');
 
+                    resultsArray = []; // 초기화
 
-            document.getElementById('result').textContent = '로딩 중...';
+                    for (const address of addresses) {
+                        try {
+                            const response = await fetch(`http://localhost:3000/coordinates?address=${encodeURIComponent(address)}`);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            const data = await response.json();
+                            if (data.x && data.y) {
+                                resultsArray.push({ address: address, x: data.x, y: data.y });
+                            } else {
+                                resultsArray.push({ address: address, error: "주소를 변환할 수 없음" });
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            resultsArray.push({ address: address, error: "네트워크 오류" });
+                        }
+                    }
 
-            try {
-                const response = await fetch(`http://localhost:3000/address?address=${encodeURIComponent(address)}`);
-                if (!response.ok) {
-                    throw new Error('네트워크 응답에 문제가 있습니다.');
+                    displayResults(resultsArray);
+                    document.getElementById('downloadButton').style.display = 'block';
+                },
+                header: false
+            });
+        }
+
+        function displayResults(results) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            for (const result of results) {
+                const address = result.address;
+                const x = result.x;
+                const y = result.y;
+                const error = result.error;
+
+                const div = document.createElement('div');
+                div.style.marginBottom = '10px';
+
+                if (error) {
+                    div.textContent = `${address}: ${error}`;
+                } else {
+                    div.textContent = `${address}: 좌표 (${y}, ${x})`;
                 }
-                const data = await response.text(); // XML 형식이므로 .text() 사용
-                document.getElementById('result').textContent = data; // XML 데이터 출력
-            } catch (error) {
-                document.getElementById('result').textContent = `오류: ${error.message}`;
+
+                resultDiv.appendChild(div);
             }
+        }
+
+        function downloadCSV() {
+            const csvData = resultsArray.map(result => {
+                if (result.error) {
+                    return [result.address, result.error];
+                } else {
+                    return [result.address, result.y, result.x];
+                }
+            });
+
+            const csvContent = "\uFEFF주소,위도,경도\n" + csvData.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "addresses_coordinates.csv");
+            document.body.appendChild(link);
+
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>

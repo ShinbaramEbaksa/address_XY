@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address to Coordinates</title>
+</head>
+<body>
+    <h1>Address to Coordinates</h1>
+    <p>도로명주소 XY 변환</p>
+    <form id="addressForm" onsubmit="event.preventDefault(); getPoint();">
+        <input type="text" id="addressInput" placeholder="도로명주소를 입력하세요" style="width: 300px;">
+        <button type="submit">결과 보기</button>
+    </form>
+    <div id="result"></div>
+    <script>
+        async function getPoint() {
+            let address = document.getElementById('addressInput').value;
+            if (!address) {
+                document.getElementById('result').textContent = '도로명주소를 입력하세요.';
+                return;
+            }
+
+            document.getElementById('result').textContent = '로딩 중...';
+
+            try {
+                const response = await fetch(`http://localhost:3000/coordinates?address=${encodeURIComponent(address)}`);
+                if (!response.ok) {
+                    throw new Error('네트워크 응답에 문제가 있습니다.');
+                }
+                const data = await response.json(); // JSON 형식으로 응답받기
+                if (data.x && data.y) {
+                    document.getElementById('result').textContent = `주소: ${address}\n좌표: (${data.y}, ${data.x})`;
+                } else {
+                    document.getElementById('result').textContent = '좌표를 변환할 수 없습니다.';
+                }
+            } catch (error) {
+                document.getElementById('result').textContent = `오류: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
